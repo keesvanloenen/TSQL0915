@@ -1,3 +1,6 @@
+﻿USE adventureworks;
+GO
+
 /*
 1. Which customers have got at least one order?
    Rewrite next query to optimize performance
@@ -8,6 +11,16 @@ SELECT DISTINCT c.LastName
 FROM SalesLT.Customer c
 INNER JOIN SalesLT.SalesOrderHeader o 
 ON c.CustomerID = o.CustomerId;
+
+SELECT c.LastName
+FROM SalesLT.Customer c
+WHERE EXISTS
+(
+	SELECT 1
+	FROM SalesLT.SalesOrderHeader
+	WHERE CustomerID = c.CustomerID
+);
+
 
 /*
 2. Next query returns the product with the most recent productid and its category.
@@ -26,6 +39,20 @@ WHERE p.ProductID =
 (
 	SELECT MAX(ProductID)
 	FROM SalesLT.Product
+);
+
+SELECT 
+    pc.Name			AS Categorie,
+    p.Name			AS Product,
+    p.ProductID		AS ProductID
+FROM SalesLT.ProductCategory AS pc
+INNER JOIN SalesLT.Product AS p
+ON pc.ProductCategoryID = p.ProductCategoryID
+WHERE p.ProductID = 
+(
+	SELECT MAX(ProductID)
+	FROM SalesLT.Product
+	WHERE ProductCategoryID = pc.ProductCategoryID	-- 👈 add
 );
 
 /*
@@ -47,3 +74,21 @@ FROM SalesLT.ProductCategory AS pc
 INNER JOIN SalesLT.Product AS p
 ON pc.ProductCategoryID = p.ProductCategoryID
 ORDER BY p.ListPrice DESC;
+
+SELECT
+	pc.Name			AS Categorie
+	, p.Name		AS Product
+	, p.ListPrice	AS Price
+FROM SalesLT.ProductCategory AS pc
+OUTER APPLY				-- 👈 Toon ook categorieën zónder product
+(
+	SELECT TOP(2) WITH TIES		-- 👈 Maak de TOP wat 'eerlijker', zie bijv. categorie 'Mountain Frames'
+		*
+	FROM SalesLT.Product AS p
+	WHERE p.ProductCategoryID = pc.ProductCategoryID
+	ORDER BY p.ListPrice DESC
+) AS p
+ORDER BY
+	Categorie
+	, Product;
+
